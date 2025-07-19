@@ -6,7 +6,7 @@ app = Flask(__name__)
 history = {}
 favorites = {}
 
-@app.route("/", methods=["GET", "POST"])
+
 def get_ip():
     if request.headers.get('X-Forwarded-For'):
         ip = request.headers.get('X-Forwarded-For').split(',')[0]
@@ -14,6 +14,7 @@ def get_ip():
         ip = request.remote_addr
     return ip
 
+@app.route("/", methods=["GET", "POST"])
 def index():
     result = ""
     text = ""
