@@ -1,5 +1,4 @@
 from app import app
-from vercel_wsgi import handle_wsgi
+from flask_vercel import run
 
-def handler(event, context):
-    return handle_wsgi(app, event, context)
+app = run(app)
