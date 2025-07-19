@@ -3,16 +3,26 @@ from cipher.logic import caesar_encrypt, caesar_decrypt
 
 app = Flask(__name__)
 
-history = []
-favorites = []
+history = {}
+favorites = {}
 
 @app.route("/", methods=["GET", "POST"])
+def get_ip():
+    if request.headers.get('X-Forwarded-For'):
+        ip = request.headers.get('X-Forwarded-For').split(',')[0]
+    else:
+        ip = request.remote_addr
+    return ip
+
 def index():
     result = ""
     text = ""
     shift = 3
     action = ""
-    
+    ip = get_ip()
+    user_history = history.setdefault(ip, [])
+    user_favorites = favorites.setdefault(ip, [])
+
     if request.method == "POST":
         text = request.form.get("text")
         shift = int(request.form.get("shift", 3))
@@ -23,16 +33,16 @@ def index():
         elif action == "decrypt":
             result = caesar_decrypt(text, shift)
         elif action == "favorite":
-            favorites.append(text)
+            user_favorites.append(text)
         elif action == "clear":
             result = ""
             text = ""
-        
+
         if action in ["encrypt", "decrypt"]:
-            history.append((action, text, result))
+            user_history.append((action, text, result))
 
     return render_template("index.html", result=result, text=text, shift=shift,
-                           history=history[-5:], favorites=favorites[-5:])
+                           history=user_history[-5:], favorites=user_favorites[-5:])
 
 @app.route("/process", methods=["POST"])
 def process():
@@ -40,27 +50,29 @@ def process():
     shift = int(request.form.get("shift", 3))
     action = request.form.get("action", "")
     result = ""
-    global history, favorites
+    ip = get_ip()
+    user_history = history.setdefault(ip, [])
+    user_favorites = favorites.setdefault(ip, [])
 
     if action == "encrypt":
         result = caesar_encrypt(text, shift)
     elif action == "decrypt":
         result = caesar_decrypt(text, shift)
     elif action == "favorite":
-        favorites.append(text)
+        user_favorites.append(text)
     elif action == "clear":
         result = ""
         text = ""
 
     if action in ["encrypt", "decrypt"]:
-        history.append((action, text, result))
+        user_history.append((action, text, result))
 
     return jsonify({
         "result": result,
         "text": text,
         "shift": shift,
-        "history": history[-5:],
-        "favorites": favorites[-5:]
+        "history": user_history[-5:],
+        "favorites": user_favorites[-5:]
     })
 
 if __name__ == "__main__":
